@@ -1,0 +1,15 @@
+bin/
+obj/
+.vs/
+*.user
+
+# Vendor binaries and reverse-engineering scratch output
+*.exe
+*.zip
+re/bin/
+re/out/
+publish/
+
+# Python bytecode
+__pycache__/
+*.pyc
