@@ -35,6 +35,9 @@ public partial class SettingsPage : UserControl
         StartMin.IsChecked = s.StartMinimized;
         CloseTray.IsChecked = s.CloseToTray;
         DelaySlider.Value = s.CommandDelayMs;
+        BatteryWarnBox.IsChecked = s.BatteryWarn;
+        BatteryWarnSlider.Value = s.BatteryWarnPercent;
+        BatteryPollSlider.Value = s.BatteryPollSeconds;
         AboutText.Text = $"AK980 Studio {typeof(SettingsPage).Assembly.GetName().Version?.ToString(3)} · open replacement for the AJAZZ AK980 V2 driver, " +
                          "built from a reverse-engineered protocol. Settings live in " + AppSettings.Folder;
         _loading = false;
@@ -78,6 +81,15 @@ public partial class SettingsPage : UserControl
         s.CloseToTray = CloseTray.IsChecked == true;
         Services.Autostart.Set(s.StartWithWindows);
         s.Save();
+    }
+
+    private void Battery_Click(object sender, RoutedEventArgs e)
+    {
+        if (_loading) return;
+        App.Settings.BatteryWarn = BatteryWarnBox.IsChecked == true;
+        App.Settings.BatteryWarnPercent = (int)BatteryWarnSlider.Value;
+        App.Settings.BatteryPollSeconds = (int)BatteryPollSlider.Value;
+        App.Settings.Save();
     }
 
     private void Delay_Changed(object sender, RoutedEventArgs e)

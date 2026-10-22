@@ -34,6 +34,18 @@
                     </DockPanel>
                 </Border>
 
+                <Border x:Name="BatteryCard" DockPanel.Dock="Bottom" Background="{DynamicResource Bg2}" CornerRadius="10" Padding="12,10" Margin="0,0,0,8"
+                        Visibility="Collapsed" AutomationProperties.Name="Battery">
+                    <StackPanel>
+                        <DockPanel>
+                            <TextBlock x:Name="BatteryIcon" FontFamily="{StaticResource Icons}" FontSize="18" VerticalAlignment="Center"/>
+                            <TextBlock x:Name="BatteryAge" DockPanel.Dock="Right" Style="{StaticResource Hint}" FontSize="11" VerticalAlignment="Center"/>
+                            <TextBlock x:Name="BatteryText" FontSize="15" FontWeight="SemiBold" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                        </DockPanel>
+                        <ProgressBar x:Name="BatteryBar" Maximum="100" Height="4" Margin="0,8,0,0"/>
+                    </StackPanel>
+                </Border>
+
                 <StackPanel>
                     <RadioButton Style="{StaticResource NavItem}" GroupName="nav" Tag="screen" AutomationProperties.Name="Screen" IsChecked="True" Checked="Nav_Checked">
                         <StackPanel Orientation="Horizontal">

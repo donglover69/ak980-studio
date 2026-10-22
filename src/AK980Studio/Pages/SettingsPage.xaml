@@ -34,6 +34,17 @@
 
             <Border Style="{StaticResource Card}" Margin="0,16,0,0">
                 <StackPanel>
+                    <TextBlock Text="Battery" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                    <CheckBox x:Name="BatteryWarnBox" Content="Notify me when the battery runs low" Click="Battery_Click"/>
+                    <c:LabeledSlider x:Name="BatteryWarnSlider" Label="Low at" Minimum="5" Maximum="50" Integer="True" Format="{}{0:0}%" ValueChanged="Battery_Click"/>
+                    <c:LabeledSlider x:Name="BatteryPollSlider" Label="Check every" Minimum="10" Maximum="120" Integer="True" Format="{}{0:0} s" ValueChanged="Battery_Click"/>
+                    <TextBlock Style="{StaticResource Hint}" Margin="0,8,0,0"
+                               Text="The keyboard only reports its charge in 2.4G mode (read through the dongle, like the stock app every 15 s). In wired mode the last reading is shown."/>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource Card}" Margin="0,16,0,0">
+                <StackPanel>
                     <TextBlock Text="Advanced" FontWeight="SemiBold" Margin="0,0,0,6"/>
                     <c:LabeledSlider x:Name="DelaySlider" Label="Command gap" Minimum="5" Maximum="100" Integer="True" Format="{}{0:0} ms" ValueChanged="Delay_Changed"/>
                     <TextBlock Style="{StaticResource Hint}" Text="Pause between USB commands. The stock app uses 35 ms; raise it if commands get lost."/>

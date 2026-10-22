@@ -342,12 +342,13 @@
     <!-- ProgressBar -->
     <Style TargetType="ProgressBar">
         <Setter Property="Height" Value="6"/>
+        <Setter Property="Foreground" Value="{DynamicResource Accent}"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ProgressBar">
                     <Grid>
                         <Border x:Name="PART_Track" CornerRadius="3" Background="{DynamicResource Bg3}"/>
-                        <Border x:Name="PART_Indicator" CornerRadius="3" Background="{DynamicResource Accent}" HorizontalAlignment="Left"/>
+                        <Border x:Name="PART_Indicator" CornerRadius="3" Background="{TemplateBinding Foreground}" HorizontalAlignment="Left"/>
                     </Grid>
                 </ControlTemplate>
             </Setter.Value>

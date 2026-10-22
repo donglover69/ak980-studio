@@ -15,6 +15,7 @@ static int Usage()
                                                        render the LCD frames to PNGs without touching the keyboard
           ak980 light <mode 0-19> [--color RRGGBB] [--bright 0-5] [--speed 0-5] [--dir N] [--rainbow]
           ak980 side <off|flowing|red|yellow|green|iceblue|blue|pink|white|neon>
+          ak980 battery                                read the battery level through the 2.4G dongle
           ak980 raw <hex bytes>                        send one 64-byte command packet, print the reply
         """);
     return 1;
@@ -129,6 +130,14 @@ try
             kb.SetSideLight(mode);
             Console.WriteLine($"Side/logo light: {mode}");
             return 0;
+        }
+
+        case "battery":
+        {
+            using var dongle = Ak980Dongle.Open() ?? throw new InvalidOperationException("2.4G dongle not found");
+            var level = dongle.ReadBattery();
+            Console.WriteLine(level is int pct ? $"Battery: {pct}%" : "No answer (the keyboard must be in 2.4G mode)");
+            return level is null ? 3 : 0;
         }
 
         case "raw" when args.Length >= 2:

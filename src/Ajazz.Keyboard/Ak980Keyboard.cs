@@ -78,6 +78,16 @@ public sealed class Ak980Keyboard : IDisposable
     public static bool IsPresent() =>
         HidDevice.Enumerate(VendorId).Any(d => d.ProductId is UsbProductId or DongleProductId);
 
+    /// <summary>
+    /// What is plugged in. The keyboard only enumerates over USB in wired mode; in 2.4G mode the cable just charges
+    /// and the dongle is the only way to reach it.
+    /// </summary>
+    public static (bool Usb, bool Dongle) Detect()
+    {
+        var all = HidDevice.Enumerate(VendorId);
+        return (all.Any(d => d.ProductId == UsbProductId), all.Any(d => d.ProductId == DongleProductId));
+    }
+
     public static List<HidDeviceInfo> ListInterfaces() => HidDevice.Enumerate(VendorId);
 
     // ---------------------------------------------------------------- transport

@@ -15,13 +15,22 @@ public sealed class KeyboardService : IDisposable
     private readonly DispatcherTimer _poll;
     private readonly SemaphoreSlim _gate = new(1, 1);
     private Ak980Keyboard? _kb;
+    private Ak980Dongle? _dongle;
     private DateTime _lastClockSync = DateTime.MinValue;
+    private DateTime _lastBatteryPoll = DateTime.MinValue;
+    private bool _batteryPolling;
 
     public event Action? StatusChanged;
+    public event Action? BatteryChanged;
 
     public bool IsConnected => _kb is not null;
     public bool IsBusy { get; private set; }
     public string Status { get; private set; } = "Looking for keyboard...";
+
+    /// <summary>True while the keyboard answers over the dongle (2.4G mode).</summary>
+    public bool IsWireless { get; private set; }
+    public int? BatteryPercent => _settings.LastBatteryPercent;
+    public DateTime? BatteryTime => _settings.LastBatteryTime;
 
     public KeyboardService(AppSettings settings)
     {
@@ -39,8 +48,9 @@ public sealed class KeyboardService : IDisposable
     private async Task PollAsync()
     {
         if (IsBusy) return;
-        bool present = await Task.Run(Ak980Keyboard.IsPresent);
-        if (present && _kb is null)
+        var (usb, dongle) = await Task.Run(Ak980Keyboard.Detect);
+
+        if (usb && _kb is null)
         {
             try
             {
@@ -51,25 +61,83 @@ public sealed class KeyboardService : IDisposable
                 SetStatus($"Keyboard found but could not be opened: {ex.Message}");
                 return;
             }
-            if (_kb is null)
+            if (_kb is not null)
             {
-                SetStatus("2.4G dongle detected. Plug in the USB cable to configure the keyboard.");
-                return;
+                _kb.CommandDelayMs = _settings.CommandDelayMs;
+                SetWireless(false);
+                SetStatus($"Connected: {_kb.Product} (USB)");
+                await OnConnectedAsync();
             }
-            _kb.CommandDelayMs = _settings.CommandDelayMs;
-            SetStatus($"Connected: {_kb.Product} (USB)");
-            await OnConnectedAsync();
         }
-        else if (!present && _kb is not null)
+        else if (!usb && _kb is not null)
         {
             _kb.Dispose();
             _kb = null;
-            SetStatus("Keyboard disconnected");
+            // Switching the keyboard to 2.4G drops the USB device; check the battery right away.
+            _lastBatteryPoll = DateTime.MinValue;
         }
         else if (_kb is not null && _settings.SyncClockHourly && DateTime.Now - _lastClockSync > TimeSpan.FromHours(1))
         {
             await RunAsync(kb => SyncClock(kb), "Clock synced");
         }
+
+        if (usb) return;
+        if (!dongle)
+        {
+            _dongle?.Dispose();
+            _dongle = null;
+            SetWireless(false);
+            SetStatus("Looking for keyboard...");
+            return;
+        }
+        if (DateTime.Now - _lastBatteryPoll >= TimeSpan.FromSeconds(Math.Max(5, _settings.BatteryPollSeconds)))
+            await PollBatteryAsync();
+        SetStatus(IsWireless
+            ? "Connected over 2.4G. Switch the keyboard to wired (USB) mode to change settings."
+            : "2.4G dongle found, but the keyboard isn't answering (asleep, off, or in Bluetooth mode).");
+    }
+
+    /// <summary>Asks the keyboard for its charge over the dongle, like the stock app does every 15 s in 2.4G mode.</summary>
+    private async Task PollBatteryAsync()
+    {
+        if (_batteryPolling) return;
+        _batteryPolling = true;
+        _lastBatteryPoll = DateTime.Now;
+        try
+        {
+            int? level = await Task.Run(() =>
+            {
+                _dongle ??= Ak980Dongle.Open();
+                return _dongle?.ReadBattery();
+            });
+            SetWireless(level is not null);
+            if (level is int pct)
+            {
+                bool changed = _settings.LastBatteryPercent != pct;
+                _settings.LastBatteryPercent = pct;
+                _settings.LastBatteryTime = DateTime.Now;
+                if (changed) _settings.Save(); // keep the last reading even if the app is killed
+                BatteryChanged?.Invoke();
+            }
+        }
+        catch (Exception)
+        {
+            // The dongle was unplugged mid-request; reopen on the next poll.
+            _dongle?.Dispose();
+            _dongle = null;
+            SetWireless(false);
+        }
+        finally
+        {
+            _batteryPolling = false;
+        }
+    }
+
+    private void SetWireless(bool wireless)
+    {
+        if (IsWireless == wireless) return;
+        IsWireless = wireless;
+        BatteryChanged?.Invoke();
     }
 
     private async Task OnConnectedAsync()
@@ -92,7 +160,9 @@ public sealed class KeyboardService : IDisposable
         var kb = _kb;
         if (kb is null)
         {
-            SetStatus("Keyboard not connected (USB cable required)");
+            SetStatus(IsWireless
+                ? "The keyboard is in 2.4G mode. Switch it to wired (USB) mode to change settings."
+                : "Keyboard not connected (USB cable required)");
             return false;
         }
         await _gate.WaitAsync();
@@ -135,6 +205,7 @@ public sealed class KeyboardService : IDisposable
 
     private void SetStatus(string s)
     {
+        if (Status == s) return;
         Status = s;
         StatusChanged?.Invoke();
     }
@@ -143,5 +214,6 @@ public sealed class KeyboardService : IDisposable
     {
         _poll.Stop();
         _kb?.Dispose();
+        _dongle?.Dispose();
     }
 }

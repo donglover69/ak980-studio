@@ -48,6 +48,13 @@ public sealed class AppSettings
     // Firmware options (Keyboard page)
     public KeyboardOptions KeyboardOptions { get; set; } = new();
 
+    // Battery (read through the 2.4G dongle; the keyboard only answers in 2.4G mode)
+    public int BatteryPollSeconds { get; set; } = 15;
+    public bool BatteryWarn { get; set; } = true;
+    public int BatteryWarnPercent { get; set; } = 20;
+    public int? LastBatteryPercent { get; set; }
+    public DateTime? LastBatteryTime { get; set; }
+
     private static readonly JsonSerializerOptions Json = new() { WriteIndented = true };
 
     public static string Folder { get; } =

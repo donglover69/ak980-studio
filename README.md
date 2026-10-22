@@ -20,7 +20,8 @@ Don't open the stock AJAZZ app afterwards: it will reset the screen again.
 | Lighting | All 19 effects plus off. Each effect only shows the controls it supports (brightness, speed, direction, color, rainbow). Live apply, presets, optional re-apply on connect. |
 | Per-key colors | Paint the real key layout, eyedropper, rainbow/gradient fills, WASD preset. |
 | Keyboard | Win / Alt+Tab / Alt+F4 locks, Fn swap, sleep timer, debounce level (with the stock latency figures). |
-| App settings | Dark/light theme, accent color, UI size, start with Windows (hidden), close to tray, command gap. |
+| Battery | Sidebar charge level and tray tooltip, read through the 2.4G dongle every 15 s (configurable). Low-battery notification with an adjustable threshold. The keyboard only reports its charge in 2.4G mode; in wired mode the last reading and its age are shown. |
+| App settings | Dark/light theme, accent color, UI size, start with Windows (hidden), close to tray, battery alerts, command gap. |
 
 Firmware-only lights (no software command exists, checked against every opcode in the stock driver):
 
@@ -60,7 +61,13 @@ A transaction looks like this: `04 18` (begin), then `04 OP ARG 00 00 00 00 00 C
 
 LCD upload blob: `[0]` = frame count, `[1..n]` = per-frame delay in 2 ms units, then from offset 256 the frames as RGB565 little-endian, 240×135, top-down rows. The blob is padded with `FF` to a whole number of 4 KiB pages; the keyboard holds up to 140 frames. Each page takes about 145 ms, because the keyboard acks every flash write.
 
-The 2.4 GHz dongle (PID FEFE) uses a different framing on MI_03 (32-byte output reports): the clock is `0C 10 00 00 SLOT 5A …`, and LCD data goes out as 28-byte chunks after a `7F 03 00 SLOT COUNT24` header. Only the USB path is implemented.
+The 2.4 GHz dongle (PID FEFE) uses a different framing on MI_03 (usage page FF60, 33-byte output reports): report ID 0, the command bytes, and a byte-sum checksum in the last byte. The reply echoes the first three command bytes.
+
+- Battery (verified): request `20 01`, reply `20 01 00 LEVEL …` with LEVEL in percent. The keyboard only answers while it is switched to 2.4G mode, and in that mode the USB command interface disappears (the cable only charges).
+- Clock: `0C 10 00 00 SLOT 5A …`
+- LCD data: 28-byte chunks after a `7F 03 00 SLOT COUNT24` header
+
+Configuration commands (lighting, LCD, options) are only implemented over USB.
 
 ## Repo layout
 

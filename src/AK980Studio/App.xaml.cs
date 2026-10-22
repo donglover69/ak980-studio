@@ -44,7 +44,27 @@ public partial class App : Application
                 Dispatcher.Invoke(ShowMain);
         }) { IsBackground = true }.Start();
 
+        Keyboard.BatteryChanged += () => Dispatcher.Invoke(OnBatteryChanged);
+        OnBatteryChanged();
         Keyboard.Start();
+    }
+
+    private bool _lowBatteryWarned;
+
+    private void OnBatteryChanged()
+    {
+        _tray?.SetText(BatteryFormat.TrayText(Keyboard));
+        if (!Keyboard.IsWireless || Keyboard.BatteryPercent is not int pct) return;
+        int threshold = Settings.BatteryWarnPercent;
+        if (Settings.BatteryWarn && pct < threshold && !_lowBatteryWarned)
+        {
+            _lowBatteryWarned = true;
+            _tray?.Notify("AK980 battery low", $"{pct}% left. Plug in the USB cable to charge.", warning: true);
+        }
+        else if (pct >= threshold + 5)
+        {
+            _lowBatteryWarned = false; // re-arm after charging
+        }
     }
 
     public void ShowMain()

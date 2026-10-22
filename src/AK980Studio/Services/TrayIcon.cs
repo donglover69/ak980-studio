@@ -31,6 +31,12 @@ public sealed class TrayIcon : IDisposable
         _icon.MouseClick += (_, e) => { if (e.Button == Forms.MouseButtons.Left) show(); };
     }
 
+    /// <summary>Tray tooltip text (Windows caps it at 127 characters).</summary>
+    public void SetText(string text) => _icon.Text = text.Length > 127 ? text[..127] : text;
+
+    public void Notify(string title, string text, bool warning = false) =>
+        _icon.ShowBalloonTip(8000, title, text, warning ? Forms.ToolTipIcon.Warning : Forms.ToolTipIcon.Info);
+
     public void Dispose()
     {
         _icon.Visible = false;
